@@ -1,5 +1,9 @@
 import os, random, operator, sys
 from collections import Counter
+from util import *
+from json import loads
+from json import dumps
+from re import sub
 
 def dotProduct(d1, d2):
     """
@@ -80,55 +84,51 @@ def interactivePrompt(featureExtractor, weights):
         verbosePredict(phi, None, weights, sys.stdout)
 
 ############################################################
+def extractJSONDict(json_file):
+    """
+    @param json_file: file containing parsed data
+    @return (list, list): trainExamples, testExamples (each with (features, value))
+    """
+    examples = []
+    with open(json_file, 'r') as f:
+        for line in f:
+            examples.append(loads(line))
+    
+    random.shuffle(examples)
+    half = len(examples)/2
+    trainExamples = examples[:half]
+    testExamples = examples[half:]
+    return (trainExamples, testExamples)
 
-def generateClusteringExamples(numExamples, numWordsPerTopic, numFillerWords):
-    '''
-    Generate artificial examples inspired by sentiment for clustering.
-    Each review has a hidden sentiment (positive or negative) and a topic (plot, acting, or music).
-    The actual review consists of 2 sentiment words, 4 topic words and 2 filler words, for example:
+def extractJSONArray(json_file):
+    """
+    @param json_file: file containing parsed data
+    @return list: list of (sparse vector of features, score)
+    """
+    features = []
+    with open('aggregated_features.txt', 'r') as feature_file:
+        for line in feature_file:
+            line = line.replace('\n','')
+            features.append(line)
+    print(features)
 
-        good:1 great:1 plot1:2 plot7:1 plot9:1 filler0:1 filler10:1
+    examples = []
+    with open(json_file, 'r') as f:
+        for line in f:
+            sparse, value = loads(line)
+            example_features = []
+            for i in xrange(len(features)):
+                if features[i] in sparse:
+                    example_features.append(1)
+                else:
+                    example_features.append(0)
+            examples.append((example_features, value))
 
-    numExamples: Number of examples to generate
-    numWordsPerTopic: Number of words per topic (e.g., plot0, plot1, ...)
-    numFillerWords: Number of words per filler (e.g., filler0, filler1, ...)
-    '''
-    sentiments = [['bad', 'awful', 'worst', 'terrible'], ['good', 'great', 'fantastic', 'excellent']]
-    topics = ['plot', 'acting', 'music']
-    def generateExample():
-        x = Counter()
-        # Choose 2 sentiment words according to some sentiment
-        sentimentWords = random.choice(sentiments)
-        x[random.choice(sentimentWords)] += 1
-        x[random.choice(sentimentWords)] += 1
-        # Choose 4 topic words from a fixed topic
-        topic = random.choice(topics)
-        x[topic + str(random.randint(0, numWordsPerTopic-1))] += 1
-        x[topic + str(random.randint(0, numWordsPerTopic-1))] += 1
-        x[topic + str(random.randint(0, numWordsPerTopic-1))] += 1
-        x[topic + str(random.randint(0, numWordsPerTopic-1))] += 1
-        # Choose 2 filler words
-        x['filler' + str(random.randint(0, numFillerWords-1))] += 1
-        return x
+    random.shuffle(examples)
+    half = len(examples)/2
+    trainExamples = examples[:half]
+    testExamples = examples[half:]
+    return (trainExamples, testExamples)
 
-    random.seed(42)
-    examples = [generateExample() for _ in range(numExamples)]
-    return examples
 
-def outputClusters(path, examples, centers, assignments):
-    '''
-    Output the clusters to the given path.
-    '''
-    print 'Outputting clusters to %s' % path
-    out = open(path, 'w')
-    for j in range(len(centers)):
-        print >>out, '====== Cluster %s' % j
-        print >>out, '--- Centers:'
-        for k, v in sorted(centers[j].items(), key = lambda (k,v) : -v):
-            if v != 0:
-                print >>out, '%s\t%s' % (k, v)
-        print >>out, '--- Assigned points:'
-        for i, z in enumerate(assignments):
-            if z == j:
-                print >>out, ' '.join(examples[i].keys())
-    out.close()
+

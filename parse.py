@@ -22,7 +22,7 @@ item in the data set. Your job is to extend this functionality to create all
 of the necessary SQL tables for your database.
 """
 def parseJson(json_file):
-
+    aggregated_features = set()
     businesses = []
     with open(json_file, 'r') as f:
         for line in f:
@@ -85,14 +85,24 @@ def parseJson(json_file):
                 else:
                     if attributes[key] == True:
                         features[key] = 1
+            for key in features:
+                aggregated_features.add(key)
             data.append((features, success))
 
     print("Successful Restaurants: " + str(success_count))
     print("Total Restaurants: " + str(len(data)))
+
     data_file = open('restaurant_data.json','w')
     for business in data:
         data_file.write(dumps(business, data_file))
         data_file.write('\n')
+    data_file.close()
+
+    aggregated_features_file = open('aggregated_features.txt','w')
+    for feature in aggregated_features:
+        aggregated_features_file.write(feature)
+        aggregated_features_file.write('\n')
+    aggregated_features_file.close()
 
 """
 Loops through each json files provided on the command line and passes each file
