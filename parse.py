@@ -17,9 +17,7 @@ def isJson(f):
 
 
 """
-Parses a single json file. Currently, there's a loop that iterates over each
-item in the data set. Your job is to extend this functionality to create all
-of the necessary SQL tables for your database.
+Parses a single json file.
 """
 def parseJson(json_file):
     aggregated_features = set()
@@ -109,7 +107,7 @@ Loops through each json files provided on the command line and passes each file
 to the parser
 """
 def main(argv):
-    f = "yelp_academic_dataset_business.json"
+    f = "yelp-data/yelp_academic_dataset_business.json"
     if isJson(f):
         parseJson(f)
         print "Success parsing " + f
